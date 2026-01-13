@@ -10,6 +10,7 @@ import zmq
 
 from zmqruntime.config import TransportMode, ZMQConfig
 from zmqruntime.messages import ImageAck
+from zmqruntime.queue_tracker import GlobalQueueTrackerRegistry
 from zmqruntime.transport import get_default_transport_mode, get_zmq_transport_url
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,15 @@ class GlobalAckListener:
         self._port: int | None = None
         self._host: str = "*"
         self._initialized = True
+        self._register_default_callback()
+
+    def _register_default_callback(self) -> None:
+        def _mark_processed(ack: ImageAck) -> None:
+            tracker = GlobalQueueTrackerRegistry().get_tracker(ack.viewer_port)
+            if tracker:
+                tracker.mark_processed(ack.image_id)
+
+        self._callbacks.append(_mark_processed)
 
     def register_callback(self, callback: Callable[[ImageAck], None]) -> None:
         """Register callback for ack messages."""

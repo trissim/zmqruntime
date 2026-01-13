@@ -16,7 +16,9 @@ from zmqruntime.transport import (
     get_default_transport_mode,
     get_ipc_socket_path,
     get_zmq_transport_url,
+    is_port_in_use,
     remove_ipc_socket,
+    wait_for_server_ready,
 )
 
 
@@ -143,63 +145,21 @@ class ZMQClient(ABC):
                 pass
 
     def _wait_for_server_ready(self, timeout: float = 10.0) -> bool:
-        start = time.time()
-        while time.time() - start < timeout:
-            if self._is_port_in_use(self.port) and self._is_port_in_use(self.control_port):
-                break
-            time.sleep(0.2)
-        else:
-            return False
-
-        control_url = get_zmq_transport_url(
-            self.control_port,
+        return wait_for_server_ready(
+            self.port,
+            self.transport_mode,
             host=self.host,
-            mode=self.transport_mode,
             config=self.config,
+            timeout=timeout,
         )
 
-        start = time.time()
-        while time.time() - start < timeout:
-            try:
-                ctx = zmq.Context()
-                sock = ctx.socket(zmq.REQ)
-                sock.setsockopt(zmq.LINGER, 0)
-                sock.setsockopt(zmq.RCVTIMEO, 1000)
-                sock.connect(control_url)
-                sock.send(pickle.dumps({"type": "ping"}))
-                response = pickle.loads(sock.recv())
-                if response.get("type") == "pong" and response.get("ready"):
-                    sock.close()
-                    ctx.term()
-                    return True
-            except Exception:
-                pass
-            finally:
-                try:
-                    sock.close()
-                    ctx.term()
-                except Exception:
-                    pass
-            time.sleep(0.5)
-
-        return False
-
     def _is_port_in_use(self, port: int) -> bool:
-        if self.transport_mode == TransportMode.IPC:
-            socket_path = get_ipc_socket_path(port, self.config)
-            return socket_path.exists() if socket_path else False
-
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(0.1)
-        try:
-            sock.bind(("localhost", port))
-            sock.close()
-            return False
-        except OSError:
-            sock.close()
-            return True
-        except Exception:
-            return False
+        return is_port_in_use(
+            port,
+            self.transport_mode,
+            host=self.host,
+            config=self.config,
+        )
 
     def _find_free_port(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

@@ -23,10 +23,16 @@ from zmqruntime.messages import (
 from zmqruntime.queue_tracker import QueueTracker, GlobalQueueTrackerRegistry
 from zmqruntime.server import ZMQServer
 from zmqruntime.transport import (
+    coerce_transport_mode,
+    get_control_port,
+    get_control_url,
     get_default_transport_mode,
     get_ipc_socket_path,
     get_zmq_transport_url,
+    is_port_in_use,
+    ping_control_port,
     remove_ipc_socket,
+    wait_for_server_ready,
 )
 
 __all__ = [
@@ -51,8 +57,14 @@ __all__ = [
     "QueueTracker",
     "GlobalQueueTrackerRegistry",
     "ZMQServer",
+    "coerce_transport_mode",
+    "get_control_port",
+    "get_control_url",
     "get_default_transport_mode",
     "get_ipc_socket_path",
     "get_zmq_transport_url",
+    "is_port_in_use",
+    "ping_control_port",
     "remove_ipc_socket",
+    "wait_for_server_ready",
 ]
