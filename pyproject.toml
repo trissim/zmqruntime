@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "zmqruntime"
+version = "0.1.0"
+description = "Generic ZMQ-based distributed execution framework"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pyzmq>=22.0",
+]
+
+[project.optional-dependencies]
+registry = ["metaclass-registry"]
+dev = ["pytest", "pytest-cov"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/zmqruntime"]
